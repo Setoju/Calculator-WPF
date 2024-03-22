@@ -65,6 +65,35 @@ namespace Calculator
         }
     }
 
+    class LogCommand : ICommand
+    {
+        private TextBox _outputTextBox;
+
+        public LogCommand(TextBox outputTextBox)
+        {
+            _outputTextBox = outputTextBox;
+        }
+
+        public void Execute()
+        {
+            if (double.TryParse(_outputTextBox.Text, out double value))
+            {
+                if (value > 0)
+                {
+                    _outputTextBox.Text = Math.Log10(value).ToString();
+                }
+                else
+                {
+                    _outputTextBox.Text = "Invalid Input";
+                }
+            }
+            else
+            {
+                _outputTextBox.Text = "Error";
+            }
+        }
+    }
+
     // Concrete command for adding a character
     class AddCharacterCommand : ICommand
     {
@@ -161,8 +190,7 @@ namespace Calculator
 
         public void Execute()
         {
-            _outputTextBox.Text = "";
-            MainWindow.ClearPreviousExpression();
+            _outputTextBox.Text = "";            
         }
     }
 
@@ -265,9 +293,17 @@ namespace Calculator
             sqrtButton.Content = "√";
             sqrtButton.Click += SqrtButton_Click;
 
+            Button logButton = new Button();
+            logButton.Content = "log";
+            logButton.Click += LogButton_Click;
+
             Grid.SetColumn(sqrtButton, ExpandGrid.ColumnDefinitions.Count - 1);
             Grid.SetRow(sqrtButton, 1);
             ExpandGrid.Children.Add(sqrtButton);
+
+            Grid.SetColumn(logButton, ExpandGrid.ColumnDefinitions.Count - 1);
+            Grid.SetRow(logButton, 2);
+            ExpandGrid.Children.Add(logButton);
         }
 
         private void SqrtButton_Click(object sender, RoutedEventArgs e)
@@ -282,10 +318,17 @@ namespace Calculator
             }            
         }
 
-        public static void ClearPreviousExpression()
+        private void LogButton_Click(object sender, RoutedEventArgs e)
         {
-            previousExpression.DefaultIfEmpty();
-        }
+            if (OutputTextBlock.Text.Length > 0)
+            {
+                _command = new EvaluateExpressionCommand(OutputTextBlock);
+                _command.Execute();
+
+                _command = new LogCommand(OutputTextBlock);
+                _command.Execute();
+            }
+        }        
 
         private void Error_Clear()
         {
@@ -326,6 +369,11 @@ namespace Calculator
                     }
                 }
             }
+        }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {            
+            e.Handled = true;
         }
 
         private void Operation_Click(object sender, RoutedEventArgs e)
