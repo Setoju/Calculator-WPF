@@ -18,9 +18,9 @@ namespace Calculator
     class ClearEntryCommand : ICommand
     {
         private TextBox _outputTextBox;
-        private string _previousExpression;
+        private List<string> _previousExpression;
 
-        public ClearEntryCommand(TextBox outputTextBox, string previousExpression)
+        public ClearEntryCommand(TextBox outputTextBox, ref List<string> previousExpression)
         {
             _outputTextBox = outputTextBox;
             _previousExpression = previousExpression;
@@ -28,10 +28,10 @@ namespace Calculator
 
         public void Execute()
         {
-            if (!string.IsNullOrEmpty(_previousExpression))
+            if (_previousExpression.Count > 0 && !string.IsNullOrEmpty(_previousExpression[_previousExpression.Count - 1]))
             {
-                _outputTextBox.Text = _previousExpression;
-                _previousExpression = "";
+                _outputTextBox.Text = _previousExpression[_previousExpression.Count - 1];
+                _previousExpression.Remove(_previousExpression[_previousExpression.Count - 1]);
             }
         }
     }
@@ -131,7 +131,7 @@ namespace Calculator
         {
             _outputTextBox = outputTextBox;
             char[] operators = { '+', '-', '*', '/' };
-            MainWindow.ChangePreviousExpression(outputTextBox.Text.Split(operators)[0]);
+            MainWindow.previousExpression.Add(outputTextBox.Text.Split(operators)[0]);
         }
 
         public void Execute()
@@ -162,7 +162,7 @@ namespace Calculator
         public void Execute()
         {
             _outputTextBox.Text = "";
-            MainWindow.ChangePreviousExpression("");
+            MainWindow.ClearPreviousExpression();
         }
     }
 
@@ -187,10 +187,9 @@ namespace Calculator
 
     public partial class MainWindow : Window
     {
-        private string computingPattern = @"(?!\-\d+\s*[+\-*/])[+\-/*].*[+\-/*]";
-        private ICommand? _command;
-        private readonly char[] operations = new char[] {'+', '-', '*', '/'};
-        private static string previousExpression = "";
+        private string computingPattern = @"(?<!\d\s*[-+*/])\d+\s*[+\-/*]\s*\d+\s*[+\-/*]";
+        private ICommand? _command;        
+        public static List<string> previousExpression = new List<string>();
         private bool isFunctionalityExpanded = false;
 
         public MainWindow()
@@ -283,9 +282,9 @@ namespace Calculator
             }            
         }
 
-        public static void ChangePreviousExpression(string expression)
+        public static void ClearPreviousExpression()
         {
-            previousExpression = expression;
+            previousExpression.DefaultIfEmpty();
         }
 
         private void Error_Clear()
@@ -350,7 +349,7 @@ namespace Calculator
                         _command.Execute();
                         break;
                     case "CE": 
-                        _command = new ClearEntryCommand(OutputTextBlock, previousExpression);
+                        _command = new ClearEntryCommand(OutputTextBlock, ref previousExpression);
                         _command.Execute();
                         break;
                     case "⌫":
